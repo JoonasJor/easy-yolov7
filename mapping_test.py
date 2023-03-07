@@ -25,21 +25,21 @@ swarm = TelloSwarm.fromIps([
     "192.168.73.110",
     "192.168.73.165"
 ])
-#me = tello.Tello()
+# me = tello.Tello()
 swarm.connect()
 
 
 # print(me.get_battery())
 
 
-#cv2.imshow("Output", img)
-#cv2.waitKey(1)
+# cv2.imshow("Output", img)
+# cv2.waitKey(1)
 
 def getKeyBoardInput():
     lr, fb, ud, yv = 0, 0, 0, 0
     speed = 50
     aspeed = 50
-    global yaw, x, y, a
+    global yaw, x, y, a, drone
     d = 0
     if km.getkey("LEFT"):
         lr = -speed
@@ -84,7 +84,7 @@ def getKeyBoardInput():
     if km.getkey("e"):
         swarm.takeoff()
     if km.getkey("0"):
-       drone = 0
+        drone = 0
     elif km.getkey("1"):
         drone = 1
     elif km.getkey("9"):
@@ -101,18 +101,22 @@ def drawPoints():
     for coords in coordinates:
         cv2.circle(img, coords, 5, (0, 0, 255), cv2.FILLED)
         cv2.circle(img, (coords[0] + 50, coords[1]), 5, (0, 0, 255), cv2.FILLED)
-    cv2.putText(img, f'({(coords[0] - 500) / 100}, {(coords[1] - 500) / 100})m', (coords[0] + 10, coords[1] + 30), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 255), 1)    
-    cv2.putText(img, f'({(coords[0] - 450) / 100}, {(coords[1] - 500) / 100})m', (coords[0] + 60, coords[1] + 30), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 255), 1) 
+    cv2.putText(img, f'({(coords[0] - 500) / 100}, {(coords[1] - 500) / 100})m', (coords[0] + 10, coords[1] + 30),
+                cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 255), 1)
+    cv2.putText(img, f'({(coords[0] - 450) / 100}, {(coords[1] - 500) / 100})m', (coords[0] + 60, coords[1] + 30),
+                cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 255), 1)
+
 
 while True:
     vals = getKeyBoardInput()
 
-    if(drone == 9):
+    if (drone == 9):
         swarm.send_rc_control(vals[0], vals[1], vals[2], vals[3])
     else:
+        swarm.send_rc_control(0, 0, 0, 0)
         swarm.tellos[drone].send_rc_control(vals[0], vals[1], vals[2], vals[3])
 
-    coordinates.append((x,y))
+    coordinates.append((x, y))
     img = np.zeros((1000, 1000, 3), np.uint8)
     drawPoints()
     cv2.imshow("Output", img)
