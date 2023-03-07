@@ -17,6 +17,8 @@ a = 0
 yaw = 0
 coordinates = []
 
+drone = 0
+
 km.init()
 
 swarm = TelloSwarm.fromIps([
@@ -81,6 +83,13 @@ def getKeyBoardInput():
         swarm.land()
     if km.getkey("e"):
         swarm.takeoff()
+    if km.getkey("0"):
+       drone = 0
+    elif km.getkey("1"):
+        drone = 1
+    elif km.getkey("9"):
+        drone = 9
+
     sleep(interval)
     a += yaw
     x += int(d * math.cos(math.radians(a)))
@@ -97,7 +106,11 @@ def drawPoints():
 
 while True:
     vals = getKeyBoardInput()
-    swarm.send_rc_control(vals[0], vals[1], vals[2], vals[3])
+
+    if(drone == 9):
+        swarm.send_rc_control(vals[0], vals[1], vals[2], vals[3])
+    else:
+        swarm.tellos[drone].send_rc_control(vals[0], vals[1], vals[2], vals[3])
 
     coordinates.append((x,y))
     img = np.zeros((1000, 1000, 3), np.uint8)
