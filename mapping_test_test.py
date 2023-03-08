@@ -14,8 +14,8 @@ dInterval = fSpeed * interval
 aInterval = aSpeed * interval
 x = [500, 550]
 y = [500, 500]
-a = [0, 0]
-yaw = [0, 0]
+a = 0
+yaw = 0
 coordinates = [[(x[0], y[0])], [(x[1], y[1])]]
 colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
 
@@ -49,38 +49,22 @@ def getKeyBoardInput():
     if km.getkey("LEFT"):
         lr = -speed
         d = dInterval
-        if(drone == 9):
-            for i in range(len(a)):
-                a[i] = -180
-        else:
-            a[drone] = -180
+        a = -180
 
     elif km.getkey("RIGHT"):
         lr = speed
         d = -dInterval
-        if(drone == 9):
-            for i in range(len(a)):
-                a[i] = 180
-        else:
-            a[drone] = 180
+        a = 180
 
     if km.getkey("UP"):
         fb = speed
         d = dInterval
-        if(drone == 9):
-            for i in range(len(a)):
-                a[i] = 270
-        else:
-            a[drone] = 270
+        a = 270
             
     elif km.getkey("DOWN"):
         fb = -speed
         d = -dInterval
-        if(drone == 9):
-            for i in range(len(a)):
-                a[i] = -90
-        else:
-            a[drone] = -90
+        a = -90
 
     if km.getkey("w"):
         ud = speed
@@ -90,21 +74,13 @@ def getKeyBoardInput():
 
     if km.getkey("a"):
         yv = -aspeed
-        if(drone == 9):
-            for i in range(len(yaw)):
-                yaw[i] -= aInterval
-        else:
-            yaw[drone] -= aInterval      
+        yaw -= aInterval      
         print(yv)
         print(yaw)
 
     elif km.getkey("d"):
         yv = aspeed
-        if(drone == 9):
-            for i in range(len(yaw)):
-                yaw[i] += aInterval
-        else:
-            yaw[drone] += aInterval    
+        yaw += aInterval    
         print(yv)
         print(yaw)
 
@@ -121,13 +97,12 @@ def getKeyBoardInput():
 
     sleep(interval)
 
+    a += yaw
     if(drone == 9):
         for i in range(len(swarm.tellos)):
-            a[i] += yaw[i]
-            x[i] += int(d * math.cos(math.radians(a[i])))
-            y[i] += int(d * math.cos(math.radians(a[i])))          
+            x[i] += int(d * math.cos(math.radians(a)))
+            y[i] += int(d * math.cos(math.radians(a)))          
     else:
-        a[drone] += yaw[drone]
         x[drone] += int(d * math.cos(math.radians(a[drone])))
         y[drone] += int(d * math.cos(math.radians(a[drone])))   
     return [lr, fb, ud, yv]
