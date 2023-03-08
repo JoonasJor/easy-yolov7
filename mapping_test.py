@@ -40,7 +40,7 @@ for tello in swarm:
 
 def getKeyBoardInput():
     lr, fb, ud, yv = 0, 0, 0, 0
-    speed = 50
+    speed = 30
     aspeed = 50
     global yaw, x, y, x2, y2, a, drone
     d = 0
@@ -111,11 +111,11 @@ def getKeyBoardInput():
 
 def drawPoints():
     for coords in coordinates:
-        cv2.circle(img, coords, 5, (0, 0, 255), cv2.FILLED)
+        cv2.circle(img, coords, 2, (0, 0, 255), cv2.FILLED)
     for coords2 in coordinates2:
-        cv2.circle(img, coords2, 5, (0, 0, 255), cv2.FILLED)
+        cv2.circle(img, coords2, 2, (0, 255, 0), cv2.FILLED)
     cv2.putText(img, f'({(coords[0] - 500) / 100}, {(coords[1] - 500) / 100})m', (coords[0] + 10, coords[1] + 30),
-                cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 255), 1)
+                cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0), 1)
     cv2.putText(img, f'({(coords2[0] - 500) / 100}, {(coords[1] - 500) / 100})m', (coords2[0] + 10, coords[1] + 30),
                 cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 255), 1)
 
