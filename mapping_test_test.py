@@ -12,7 +12,7 @@ interval = 0.25  # Defines often distance is being printed
 
 dInterval = fSpeed * interval
 aInterval = aSpeed * interval
-x = [500, 550]
+x = [500, 600]
 y = [500, 500]
 a = [0, 0]
 yaw = [0, 0]
@@ -148,7 +148,7 @@ while True:
 
         for i in range(len(swarm.tellos)):
             if(i != drone):
-                if(x[drone] - x[i] > 30 and y[drone] - y[i] > 30):
+                if(x[drone] - x[i] > 50 or y[drone] - y[i] > 50):
                     swarm.tellos[drone].send_rc_control(vals[0], vals[1], vals[2], vals[3])
                     coordinates[drone].append((x[drone], y[drone]))   
 
