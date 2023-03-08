@@ -17,7 +17,7 @@ y = [500, 500]
 a = [0, 0]
 yaw = [0, 0]
 coordinates = [[(x[0], y[0])], [(x[1], y[1])]]
-colors = [(0, 0, 255), (0, 0, 255), (255, 0, 0)]
+colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
 
 drone = 0
 
@@ -44,7 +44,7 @@ def getKeyBoardInput():
     lr, fb, ud, yv = 0, 0, 0, 0
     speed = 30
     aspeed = 50
-    global yaw, x, y, x2, y2, a, drone
+    global yaw, x, y, a, drone
     d = 0
     if km.getkey("LEFT"):
         lr = -speed
@@ -122,12 +122,10 @@ def getKeyBoardInput():
     sleep(interval)
 
     if(drone == 9):
-        for i in range(len(a)):
+        for i in range(len(swarm.tellos)):
             a[i] += yaw[i]
-        for i in range(len(x)):
             x[i] += int(d * math.cos(math.radians(a[i])))
-        for i in range(len(y)):
-            y[i] += int(d * math.cos(math.radians(a[i])))
+            y[i] += int(d * math.cos(math.radians(a[i])))          
     else:
         a[drone] += yaw[drone]
         x[drone] += int(d * math.cos(math.radians(a[drone])))
@@ -136,7 +134,7 @@ def getKeyBoardInput():
 
 
 def drawPoints():
-    for d in range(len(swarm)):      
+    for d in range(len(swarm.tellos)):      
         for i in range(len(coordinates[d])):
             cv2.circle(img, coordinates[d][i], 2, colors[d], cv2.FILLED)       
         cv2.putText(img, f'({(x[d] - 500) / 100}, {(y[d] - 500) / 100})m', (x[d] + 10, y[d] + 30), cv2.FONT_HERSHEY_PLAIN, 1, colors[d], 1)
@@ -146,7 +144,7 @@ while True:
 
     if (drone == 9):
         swarm.send_rc_control(vals[0], vals[1], vals[2], vals[3])
-        for d in range(len(swarm)):
+        for d in range(len(swarm.tellos)):
             coordinates[d].append((x[d], y[d]))
     else:
         swarm.send_rc_control(0, 0, 0, 0)
