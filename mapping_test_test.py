@@ -12,10 +12,11 @@ interval = 0.25  # Defines often distance is being printed
 
 dInterval = fSpeed * interval
 aInterval = aSpeed * interval
-x, y = [500, 500], [550, 500]
+x = [500, 550]
+y = [500, 500]
 a = [0, 0]
 yaw = [0, 0]
-coordinates = [x, y]
+coordinates = [[x[0], y[0]], [x[1], y[1]]]
 colors = [(0, 0, 255), (0, 0, 255), (255, 0, 0)]
 
 drone = 0
@@ -135,13 +136,10 @@ def getKeyBoardInput():
 
 
 def drawPoints():
-    for c in range(len(coordinates)):      
-        for i in range(len(coordinates[c])):
-            cv2.circle(img, coordinates[c][i], 2, colors[c], cv2.FILLED)
-            if(i == len(coordinates[c] - 1)):
-                _x = coordinates[c][i][0]
-                _y = coordinates[c][i][1]
-                cv2.putText(img, f'({(_x - 500) / 100}, {(_y - 500) / 100})m', (_x + 10, _y + 30), cv2.FONT_HERSHEY_PLAIN, 1, colors[c], 1)
+    for d in range(len(swarm)):      
+        for i in range(len(coordinates[d])):
+            cv2.circle(img, coordinates[d][i], 2, colors[d], cv2.FILLED)       
+        cv2.putText(img, f'({(x[d] - 500) / 100}, {(y[d] - 500) / 100})m', (x[d] + 10, y[d] + 30), cv2.FONT_HERSHEY_PLAIN, 1, colors[d], 1)
 
 while True:
     vals = getKeyBoardInput()
@@ -149,11 +147,11 @@ while True:
     if (drone == 9):
         swarm.send_rc_control(vals[0], vals[1], vals[2], vals[3])
         for i in range(len(coordinates)):
-            coordinates[i].append((x[i], y[i]))
+            coordinates[i].append([x[i], y[i]])
     else:
         swarm.send_rc_control(0, 0, 0, 0)
         swarm.tellos[drone].send_rc_control(vals[0], vals[1], vals[2], vals[3])
-        coordinates[drone].append((x[drone], y[drone]))       
+        coordinates[drone].append([x[drone], y[drone]])       
 
     img = np.zeros((1000, 1000, 3), np.uint8)
     drawPoints()
