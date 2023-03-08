@@ -19,7 +19,7 @@ yaw = 0
 coordinates = [[(x[0], y[0])], [(x[1], y[1])]]
 colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
 
-drone = 0
+drone = 9
 
 km.init()
 
@@ -101,10 +101,10 @@ def getKeyBoardInput():
     if(drone == 9):
         for i in range(len(swarm.tellos)):
             x[i] += int(d * math.cos(math.radians(a)))
-            y[i] += int(d * math.cos(math.radians(a)))          
+            y[i] += int(d * math.sin(math.radians(a)))          
     else:
-        x[drone] += int(d * math.cos(math.radians(a[drone])))
-        y[drone] += int(d * math.cos(math.radians(a[drone])))   
+        x[drone] += int(d * math.cos(math.radians(a)))
+        y[drone] += int(d * math.sin(math.radians(a)))   
     return [lr, fb, ud, yv]
 
 
