@@ -145,10 +145,15 @@ while True:
             coordinates[d].append((x[d], y[d]))
     else:
         swarm.send_rc_control(0, 0, 0, 0)
-        swarm.tellos[drone].send_rc_control(vals[0], vals[1], vals[2], vals[3])
-        coordinates[drone].append((x[drone], y[drone]))       
 
-    img = np.zeros((500, 500, 3), np.uint8)
+        for i in range(len(swarm.tellos)):
+            if(i != drone):
+                if(x[drone] - x[i] > 30 and y[drone] - y[i] > 30):
+                    swarm.tellos[drone].send_rc_control(vals[0], vals[1], vals[2], vals[3])
+                    coordinates[drone].append((x[drone], y[drone]))   
+
+  
+    img = np.zeros((1000, 1000, 3), np.uint8)
     drawPoints()
     cv2.imshow("Output", img)
     cv2.waitKey(1)
