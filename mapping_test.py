@@ -15,7 +15,7 @@ aInterval = aSpeed * interval
 x, y, x2, y2 = 500, 500, 550, 500
 a = 0
 yaw = 0
-coordinates, coordinates2 = [], []
+coordinates, coordinates2 = [(x, y)], [(x2, y2)]
 
 drone = 0
 
@@ -27,6 +27,9 @@ swarm = TelloSwarm.fromIps([
 ])
 # me = tello.Tello()
 swarm.connect()
+
+for tello in swarm:
+    print(tello.get_battery())
 
 
 # print(me.get_battery())
