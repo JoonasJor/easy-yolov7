@@ -16,7 +16,7 @@ x = [500, 550]
 y = [500, 500]
 a = [0, 0]
 yaw = [0, 0]
-coordinates = [[x[0], y[0]], [x[1], y[1]]]
+coordinates = [[(x[0], y[0])], [(x[1], y[1])]]
 colors = [(0, 0, 255), (0, 0, 255), (255, 0, 0)]
 
 drone = 0
@@ -123,13 +123,13 @@ def getKeyBoardInput():
 
     if(drone == 9):
         for i in range(len(a)):
-            a[i] += yaw
+            a[i] += yaw[i]
         for i in range(len(x)):
             x[i] += int(d * math.cos(math.radians(a[i])))
         for i in range(len(y)):
             y[i] += int(d * math.cos(math.radians(a[i])))
     else:
-        a[drone] += yaw  
+        a[drone] += yaw[drone]
         x[drone] += int(d * math.cos(math.radians(a[drone])))
         y[drone] += int(d * math.cos(math.radians(a[drone])))   
     return [lr, fb, ud, yv]
@@ -146,12 +146,12 @@ while True:
 
     if (drone == 9):
         swarm.send_rc_control(vals[0], vals[1], vals[2], vals[3])
-        for i in range(len(coordinates)):
-            coordinates[i].append([x[i], y[i]])
+        for d in range(len(swarm)):
+            coordinates[d].append((x[d], y[d]))
     else:
         swarm.send_rc_control(0, 0, 0, 0)
         swarm.tellos[drone].send_rc_control(vals[0], vals[1], vals[2], vals[3])
-        coordinates[drone].append([x[drone], y[drone]])       
+        coordinates[drone].append((x[drone], y[drone]))       
 
     img = np.zeros((1000, 1000, 3), np.uint8)
     drawPoints()
