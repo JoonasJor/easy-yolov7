@@ -12,10 +12,10 @@ interval = 0.25  # Defines often distance is being printed
 
 dInterval = fSpeed * interval
 aInterval = aSpeed * interval
-x, y = 500, 500
+x, y, x2, y2 = 500, 500, 550, 500
 a = 0
 yaw = 0
-coordinates = []
+coordinates, coordinates2 = [], []
 
 drone = 0
 
@@ -39,7 +39,7 @@ def getKeyBoardInput():
     lr, fb, ud, yv = 0, 0, 0, 0
     speed = 50
     aspeed = 50
-    global yaw, x, y, a, drone
+    global yaw, x, y, x2, y2, a, drone
     d = 0
     if km.getkey("LEFT"):
         lr = -speed
@@ -92,18 +92,28 @@ def getKeyBoardInput():
 
     sleep(interval)
     a += yaw
-    x += int(d * math.cos(math.radians(a)))
-    y += int(d * math.sin(math.radians(a)))
+    if(drone == 0):
+        x += int(d * math.cos(math.radians(a)))
+        y += int(d * math.sin(math.radians(a)))
+    elif(drone == 1):
+        x2 += int(d * math.cos(math.radians(a)))
+        y2 += int(d * math.sin(math.radians(a)))
+    elif(drone == 9):
+        x += int(d * math.cos(math.radians(a)))
+        y += int(d * math.sin(math.radians(a)))
+        x2 += int(d * math.cos(math.radians(a)))
+        y2 += int(d * math.sin(math.radians(a)))     
     return [lr, fb, ud, yv]
 
 
 def drawPoints():
     for coords in coordinates:
         cv2.circle(img, coords, 5, (0, 0, 255), cv2.FILLED)
-        cv2.circle(img, (coords[0] + 50, coords[1]), 5, (0, 0, 255), cv2.FILLED)
+    for coords2 in coordinates2:
+        cv2.circle(img, coords2, 5, (0, 0, 255), cv2.FILLED)
     cv2.putText(img, f'({(coords[0] - 500) / 100}, {(coords[1] - 500) / 100})m', (coords[0] + 10, coords[1] + 30),
                 cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 255), 1)
-    cv2.putText(img, f'({(coords[0] - 450) / 100}, {(coords[1] - 500) / 100})m', (coords[0] + 60, coords[1] + 30),
+    cv2.putText(img, f'({(coords2[0] - 500) / 100}, {(coords[1] - 500) / 100})m', (coords2[0] + 10, coords[1] + 30),
                 cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 255), 1)
 
 
@@ -112,11 +122,17 @@ while True:
 
     if (drone == 9):
         swarm.send_rc_control(vals[0], vals[1], vals[2], vals[3])
+        coordinates.append((x, y))
+        coordinates2.append((x2, y2))
     else:
         swarm.send_rc_control(0, 0, 0, 0)
-        swarm.tellos[drone].send_rc_control(vals[0], vals[1], vals[2], vals[3])
+        if(drone == 0):
+            swarm.tellos[0].send_rc_control(vals[0], vals[1], vals[2], vals[3])
+            coordinates.append((x, y))
+        elif(drone == 1):
+            swarm.tellos[1].send_rc_control(vals[0], vals[1], vals[2], vals[3])
+            coordinates2.append((x2, y2))           
 
-    coordinates.append((x, y))
     img = np.zeros((1000, 1000, 3), np.uint8)
     drawPoints()
     cv2.imshow("Output", img)
