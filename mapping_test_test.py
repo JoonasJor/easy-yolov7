@@ -14,8 +14,8 @@ dInterval = fSpeed * interval
 aInterval = aSpeed * interval
 x = [500, 550]
 y = [500, 500]
-a = 0
-yaw = 0
+a = [0, 0]
+yaw = [0, 0]
 coordinates = [[(x[0], y[0])], [(x[1], y[1])]]
 colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
 
@@ -49,22 +49,39 @@ def getKeyBoardInput():
     if km.getkey("LEFT"):
         lr = -speed
         d = dInterval
-        a = -180
+        if(drone == 9):
+            for i in range(len(swarm.tellos)):
+                a[i] = -180
+        else:
+            a[drone] = -180
+        
 
     elif km.getkey("RIGHT"):
         lr = speed
         d = -dInterval
-        a = 180
+        if(drone == 9):
+            for i in range(len(swarm.tellos)):
+                a[i] = 180
+        else:
+            a[drone] = 180
 
     if km.getkey("UP"):
         fb = speed
         d = dInterval
-        a = 270
+        if(drone == 9):
+            for i in range(len(swarm.tellos)):
+                a[i] = 270
+        else:
+            a[drone] = 270
             
     elif km.getkey("DOWN"):
         fb = -speed
         d = -dInterval
-        a = -90
+        if(drone == 9):
+            for i in range(len(swarm.tellos)):
+                a[i] = -90
+        else:
+            a[drone] = -90
 
     if km.getkey("w"):
         ud = speed
@@ -74,15 +91,19 @@ def getKeyBoardInput():
 
     if km.getkey("a"):
         yv = -aspeed
-        yaw -= aInterval      
-        print(yv)
-        print(yaw)
+        if(drone == 9):
+            for i in range(len(swarm.tellos)):
+                yaw[i] -= aInterval  
+        else:
+            yaw[drone] -= aInterval    
 
     elif km.getkey("d"):
         yv = aspeed
-        yaw += aInterval    
-        print(yv)
-        print(yaw)
+        if(drone == 9):
+            for i in range(len(swarm.tellos)):
+                yaw[i] += aInterval  
+        else:
+            yaw[drone] += aInterval       
 
     if km.getkey("q"):
         swarm.land()
@@ -97,14 +118,15 @@ def getKeyBoardInput():
 
     sleep(interval)
 
-    a += yaw
     if(drone == 9):
         for i in range(len(swarm.tellos)):
-            x[i] += int(d * math.cos(math.radians(a)))
-            y[i] += int(d * math.sin(math.radians(a)))          
+            a[i] += yaw[i]
+            x[i] += int(d * math.cos(math.radians(a[i])))
+            y[i] += int(d * math.sin(math.radians(a[i])))          
     else:
-        x[drone] += int(d * math.cos(math.radians(a)))
-        y[drone] += int(d * math.sin(math.radians(a)))   
+        a[drone] += yaw[drone]
+        x[drone] += int(d * math.cos(math.radians(a[drone])))
+        y[drone] += int(d * math.sin(math.radians(a[drone])))   
     return [lr, fb, ud, yv]
 
 
@@ -126,7 +148,7 @@ while True:
         swarm.tellos[drone].send_rc_control(vals[0], vals[1], vals[2], vals[3])
         coordinates[drone].append((x[drone], y[drone]))       
 
-    img = np.zeros((1000, 1000, 3), np.uint8)
+    img = np.zeros((500, 500, 3), np.uint8)
     drawPoints()
     cv2.imshow("Output", img)
     cv2.waitKey(1)
