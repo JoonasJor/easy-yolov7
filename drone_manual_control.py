@@ -30,7 +30,8 @@ class FrontEnd(object):
             - A and D: Counter clockwise and clockwise rotations (yaw)
             - W and S: Up and down.
             - P: Turn mission pad detection on/off
-            - 0/1/2: Set mission pad detection direction      
+            - 0/1/2: Set mission pad detection direction  
+            - Y: Turn yolo detection on/off     
     """
 
     def __init__(self):
@@ -59,7 +60,8 @@ class FrontEnd(object):
         self.pad_detection = False
         self.pad_direction = 0
 
-        self.counter = 0
+        self.yolo_detection = False
+
 
         # create update timer
         pygame.time.set_timer(pygame.USEREVENT + 1, 1000 // FPS)
@@ -82,6 +84,8 @@ class FrontEnd(object):
         self.screen.fill([0, 0, 0])
 
         should_stop = False
+        counter = 0
+        detections = []
         while not should_stop:
 
             for event in pygame.event.get():
@@ -97,28 +101,37 @@ class FrontEnd(object):
                 elif event.type == pygame.KEYUP:
                     self.keyup(event.key)
 
+            
+
             ret, frame = stream.read()
             if ret == True:
-                # run detection and update window every fourth frame
-                self.counter += 1
-                if(self.counter == 3):
-                    detections, detected_frame = self.detect(frame)
-                    if len(detections) != 0:
-                        print(f'\n{URL}:\n', json.dumps(detections, indent=4))
-                                
-                    # text overlays
-                    text_battery = "Battery: {}%".format(self.tello.get_battery())
-                    text_pad_detection = f"Pad Detection: {self.pad_detection} {self.pad_direction}"
-                    cv2.putText(detected_frame, text_battery, (5, 720 - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                    cv2.putText(detected_frame, text_pad_detection, (5, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                    detected_frame = cv2.cvtColor(detected_frame, cv2.COLOR_BGR2RGB)
-                    detected_frame = np.rot90(detected_frame)
-                    detected_frame = np.flipud(detected_frame)
+                if(self.yolo_detection):
+                    # run detection every tenth frame
+                    counter += 1
+                    if(counter >= 10):
+                        counter = 0                                    
+                        detections = self.yolov7.detect(frame)
+                        if len(detections) != 0:
+                            print(f'\n{URL}:\n', json.dumps(detections, indent=4)) 
+                    frame = draw(frame, detections)
 
-                    detected_frame = pygame.surfarray.make_surface(detected_frame)
-                    self.screen.blit(detected_frame, (0, 0))
-                    pygame.display.update()
-                    self.counter == 0
+                # text overlays
+                text_battery = "Battery: {}%".format(self.tello.get_battery())
+                #text_pad_detection = f"Pad Detection: {self.pad_detection} {self.pad_direction}"
+                text_yolo_detection = f"Yolo Detection: {self.yolo_detection}"
+
+                cv2.putText(frame, text_battery, (5, 720 - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                #cv2.putText(frame, text_pad_detection, (5, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                cv2.putText(frame, text_yolo_detection, (5, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = np.rot90(frame)
+                frame = np.flipud(frame)
+
+                frame = pygame.surfarray.make_surface(frame)
+                self.screen.blit(frame, (0, 0))
+                pygame.display.update()
+                    
 
             time.sleep(1 / FPS)
             
@@ -180,12 +193,15 @@ class FrontEnd(object):
             self.pad_direction = 1
         elif key == pygame.K_2: # both
             self.pad_direction = 2
+        elif key == pygame.K_y: # turn yolo detection on/off
+            self.yolo_detection = not self.yolo_detection
+
 
     def detect(self, frame):
         detections = self.yolov7.detect(frame)
-        detected_frame = draw(frame, detections)
+        #detected_frame = draw(frame, detections)
 
-        return detections, detected_frame
+        return detections
             
     def update(self):
         """ Update routine. Send velocities to Tello.
