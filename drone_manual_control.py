@@ -11,7 +11,7 @@ import json
 # Yolo settings
 WEIGHTS = 'coco.weights'
 CLASSES = 'coco.yaml'
-DEVICE  = 'gpu'
+DEVICE  = 'cpu'
 # Speed of the drone
 S = 60
 # Frames per second of the pygame window display
@@ -59,6 +59,8 @@ class FrontEnd(object):
         self.pad_detection = False
         self.pad_direction = 0
 
+        self.counter = 0
+
         # create update timer
         pygame.time.set_timer(pygame.USEREVENT + 1, 1000 // FPS)
 
@@ -97,22 +99,26 @@ class FrontEnd(object):
 
             ret, frame = stream.read()
             if ret == True:
-                detections, detected_frame = self.detect(frame)
-                if len(detections) != 0:
-                    print(f'\n{URL}:\n', json.dumps(detections, indent=4))
-                
-                # text overlays
-                text_battery = "Battery: {}%".format(self.tello.get_battery())
-                text_pad_detection = f"Pad Detection: {self.pad_detection} {self.pad_direction}"
-                cv2.putText(detected_frame, text_battery, (5, 720 - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                cv2.putText(detected_frame, text_pad_detection, (5, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                detected_frame = cv2.cvtColor(detected_frame, cv2.COLOR_BGR2RGB)
-                detected_frame = np.rot90(detected_frame)
-                detected_frame = np.flipud(detected_frame)
+                # run detection and update window every fourth frame
+                self.counter += 1
+                if(self.counter == 3):
+                    detections, detected_frame = self.detect(frame)
+                    if len(detections) != 0:
+                        print(f'\n{URL}:\n', json.dumps(detections, indent=4))
+                                
+                    # text overlays
+                    text_battery = "Battery: {}%".format(self.tello.get_battery())
+                    text_pad_detection = f"Pad Detection: {self.pad_detection} {self.pad_direction}"
+                    cv2.putText(detected_frame, text_battery, (5, 720 - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    cv2.putText(detected_frame, text_pad_detection, (5, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    detected_frame = cv2.cvtColor(detected_frame, cv2.COLOR_BGR2RGB)
+                    detected_frame = np.rot90(detected_frame)
+                    detected_frame = np.flipud(detected_frame)
 
-                detected_frame = pygame.surfarray.make_surface(detected_frame)
-                self.screen.blit(detected_frame, (0, 0))
-                pygame.display.update()
+                    detected_frame = pygame.surfarray.make_surface(detected_frame)
+                    self.screen.blit(detected_frame, (0, 0))
+                    pygame.display.update()
+                    self.counter == 0
 
             time.sleep(1 / FPS)
             
