@@ -36,14 +36,6 @@ swarm.connect()
 for tello in swarm:
     print(tello.get_battery())
 
-def backWards():
-    global inputs
-    for input in inputs:
-        neginputs = [-c for c in input]
-        print(neginputs)
-        swarm.tellos[drone].send_rc_control(neginputs[0], neginputs[1], neginputs[2], neginputs[3])
-        sleep(interval)
-
 def getKeyBoardInput():
     lr, fb, ud, yv = 0, 0, 0, 0
     speed = 30
