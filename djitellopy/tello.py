@@ -441,7 +441,7 @@ class Tello:
         self.LOGGER.info("Send command: '{}'".format(command))
         timestamp = time.time()
 
-        client_socket.sendto(command.encode('utf-8'), self.address)
+        client_socket.sendto(command.encode('utf-8'), 0, self.address)
 
         responses = self.get_own_udp_object()['responses']
 
@@ -472,7 +472,7 @@ class Tello:
         # Commands very consecutive makes the drone not respond to them. So wait at least self.TIME_BTW_COMMANDS seconds
 
         self.LOGGER.info("Send command (no response expected): '{}'".format(command))
-        client_socket.sendto(command.encode('utf-8'), self.address)
+        client_socket.sendto(command.encode('utf-8'), 0, self.address)
 
     def send_control_command(self, command: str, timeout: int = RESPONSE_TIMEOUT) -> bool:
         """Send control command to Tello and wait for its response.
