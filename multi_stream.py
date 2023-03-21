@@ -56,20 +56,32 @@ def sendCommand(drone, com):
     print(f"sent command: {com} to {drone.getsockname()}")
     drone.sendto(com.encode(), ('192.168.10.1', 8889))
 
-drone1 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-drone1.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-drone1.bind(('192.168.10.3', 56815))
-drone2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-drone2.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-drone2.bind(('192.168.10.2', 56815))
+def sendCommandAll(drones, com):
+    for drone in drones:
+        print(f"sent command: {com} to {drone.getsockname()}")
+        drone.sendto(com.encode(), ('192.168.10.1', 8889))
+
+def bindSocket(interface_ip, port):
+    drone = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    drone.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    drone.bind((interface_ip, port))
+    return drone
+
+drones = []
+drone1 = bindSocket('192.168.10.3', 56815)
+drones.append(drone1)
+drone2 = bindSocket('192.168.10.2', 56815)
+drones.append(drone2)
+
 
 recvThread1 = threading.Thread(target=recv, args=('drone-1', drone1), daemon=True)
 recvThread1.start()
 recvThread2 = threading.Thread(target=recv, args=('drone-2', drone2), daemon=True)
 recvThread2.start()
 
-sendCommand(drone1, "command")
-sendCommand(drone2, "command")
+#sendCommand(drone1, "command")
+#sendCommand(drone2, "command")
+sendCommandAll(drones, "command")
 
 time.sleep(1)
 
