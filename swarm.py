@@ -1,14 +1,11 @@
 import socket
-import threading
-import time
+from typing import Callable
 import cv2
 from algorithm.object_detector import YOLOv7
-import json
 from utils.detections import draw
-
-# Tello video url
-URL1 = "udp://0.0.0.0:11112"
-URL2 = "udp://0.0.0.0:11111"
+import queue
+import threading
+import json
 
 # Yolo settings
 WEIGHTS = 'coco.weights'
@@ -17,12 +14,22 @@ DEVICE  = 'cpu'
 
 
 
-def stream(thread_name, s):
+def stream(stream_name, s):
+    q = queue.Queue()
+
+    receiveThread = threading.Thread(target=receiveStream, args=(stream_name, s, q), daemon=True)
+    receiveThread.start()  
+
+    displayThread = threading.Thread(target=displayStream, args=(stream_name, s, q), daemon=True)
+    displayThread.start()
+
+def receiveStream(stream_name, s, q):
     # Init yolo
     yolov7 = YOLOv7()
     yolov7.load(WEIGHTS, classes=CLASSES, device=DEVICE) 
-    counter = 20
     detections = []
+    counter = 20
+    
     while True:
         try:
             ret, frame = s.read()
@@ -33,13 +40,22 @@ def stream(thread_name, s):
                     counter = 0                                    
                     detections = yolov7.detect(frame)
                     if len(detections) != 0:
-                        print(f'\n{thread_name}:\n', json.dumps(detections, indent=4)) 
+                        print(f'\n{stream_name}:\n', json.dumps(detections, indent=4)) 
                 frame = draw(frame, detections)
-            
-                cv2.imshow(thread_name, frame)
+                q.put(frame)
+        except Exception as e:   
+            print (f"receive tread {stream_name} exited: {e}")        
+            break  
+
+def displayStream(stream_name, s, q):
+    while True:
+        try:           
+            if(not q.empty()):
+                frame = q.get()
+                cv2.imshow(stream_name, frame)
                 cv2.waitKey(1)
         except Exception as e:   
-            print (f"{thread_name} exited: {e}")        
+            print (f"receive tread {stream_name} exited: {e}")        
             break  
 
 def recv(thread_name, drone):
@@ -66,66 +82,3 @@ def bindSocket(interface_ip, port):
     drone.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     drone.bind((interface_ip, port))
     return drone
-
-drones = []
-drone1 = bindSocket('192.168.10.3', 56815)
-drones.append(drone1)
-drone2 = bindSocket('192.168.10.2', 56815)
-drones.append(drone2)
-
-
-recvThread1 = threading.Thread(target=recv, args=('drone-1', drone1), daemon=True)
-recvThread1.start()
-recvThread2 = threading.Thread(target=recv, args=('drone-2', drone2), daemon=True)
-recvThread2.start()
-
-#sendCommand(drone1, "command")
-#sendCommand(drone2, "command")
-sendCommandAll(drones, "command")
-
-time.sleep(1)
-
-sendCommand(drone1, "port 8890 11112")
-sendCommand(drone2, "port 8890 11111")
-
-time.sleep(1)
-
-sendCommand(drone1, "streamoff")
-sendCommand(drone2, "streamoff")
-
-time.sleep(1)
-
-sendCommand(drone1, "streamon")
-sendCommand(drone2, "streamon")
-
-#time.sleep(2)
-
-stream1 = cv2.VideoCapture(URL1)
-if stream1.isOpened() == False:
-    print(f'[!] error opening {URL1}')
-stream2 = cv2.VideoCapture(URL2)
-if stream2.isOpened() == False:
-    print(f'[!] error opening {URL2}')
-
-streamThread1 = threading.Thread(target=stream, args=('stream1', stream1), daemon=True)
-streamThread1.start()  
-streamThread2 = threading.Thread(target=stream, args=('stream2', stream2), daemon=True)
-streamThread2.start()  
-
-#streamThread1.join()
-#streamThread2.join()
-
-try:
-    while True:
-        time.sleep(0.1)
-except KeyboardInterrupt:
-    stream1.release()
-    stream2.release()
-    drone1.shutdown(1)
-    drone1.close()
-    drone2.shutdown(1)
-    drone2.close()
-    pass
-
-# Destroy all the windows
-cv2.destroyAllWindows()
