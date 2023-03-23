@@ -2,8 +2,6 @@ import socket
 import cv2
 from algorithm.object_detector import YOLOv7
 from utils.detections import draw
-import queue
-import threading
 import json
 
 # Yolo settings
@@ -11,7 +9,7 @@ WEIGHTS = 'coco.weights'
 CLASSES = 'coco.yaml'
 DEVICE  = 'cpu'
 
-def displayStream(stream_name, stream):
+def displayStream(stream_name, stream, yolo_detection):
     # Init yolo
     yolov7 = YOLOv7()
     yolov7.load(WEIGHTS, classes=CLASSES, device=DEVICE) 
@@ -23,13 +21,17 @@ def displayStream(stream_name, stream):
             ret, frame = stream.read()
             if ret == True:
                 # run detection every 20th frame
-                counter += 1
-                if(counter >= 20):
-                    counter = 0                                    
-                    detections = yolov7.detect(frame)
-                    if len(detections) != 0:
-                        print(f'\n{stream_name}:\n', json.dumps(detections, indent=4)) 
-                frame = draw(frame, detections)
+                if(yolo_detection):
+                    counter += 1
+                    if(counter >= 20):
+                        counter = 0                                    
+                        detections = yolov7.detect(frame)
+                        if len(detections) != 0:
+                            if(detections[0].get("class") == "laptop"):
+                                print(detections[0].get("height"))
+                            #print(f'\n{stream_name}:\n', json.dumps(detections, indent=4)) 
+                            #print(detections)
+                    frame = draw(frame, detections)
                 cv2.imshow(stream_name, frame)
                 cv2.waitKey(1)
         except Exception as e:   
