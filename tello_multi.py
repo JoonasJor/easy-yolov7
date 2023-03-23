@@ -3,12 +3,12 @@ import time
 import numpy as np
 import cv2
 import math
-import swarm as s
+import swarm as stream
 import threading
 
 # Tello video url
-URL1 = "udp://0.0.0.0:11112?overrun_nonfatal=1&fifo_size=5000000"
-URL2 = "udp://0.0.0.0:11111?overrun_nonfatal=1&fifo_size=5000000"
+URL1 = "udp://0.0.0.0:11112"
+URL2 = "udp://0.0.0.0:11111"
 
 # PARAMETERS
 fSpeed = 117 / 10  # Forward speed in cm/s (15cm/s)
@@ -34,60 +34,61 @@ drones = []
 
 km.init()
 
-drone1 = s.bindSocket('192.168.10.3', 56815)
+drone1 = stream.bindSocket('192.168.10.3', 56815)
 drones.append(drone1)
-drone2 = s.bindSocket('192.168.10.2', 56814)
+drone2 = stream.bindSocket('192.168.10.2', 56814)
 drones.append(drone2)
 
-recvThread1 = threading.Thread(target=s.recv, args=('drone-1', drone1), daemon=True)
+recvThread1 = threading.Thread(target=stream.recv, args=('drone-1', drone1), daemon=True)
 recvThread1.start()
-recvThread2 = threading.Thread(target=s.recv, args=('drone-2', drone2), daemon=True)
+recvThread2 = threading.Thread(target=stream.recv, args=('drone-2', drone2), daemon=True)
 recvThread2.start()
 
 #sendCommand(drone1, "command")
 #sendCommand(drone2, "command")
-s.sendCommandAll(drones, "command")
+stream.sendCommandAll(drones, "command")
 
 time.sleep(1)
 
-s.sendCommandAll(drones, "setfps high")
+stream.sendCommand(drone1, "port 8890 11112")
+stream.sendCommand(drone2, "port 8890 11111")
 
-time.sleep(1)
-s.sendCommandAll(drones, "setbitrate 0")
+#time.sleep(1)
 
-time.sleep(1)
-s.sendCommandAll(drones, "setresolution high")
-
-time.sleep(1)
-
-
-
-s.sendCommand(drone1, "port 8890 11112")
-s.sendCommand(drone2, "port 8890 11111")
+#s.sendCommand(drone1, "wifi 1 tellote1234")
+#s.sendCommand(drone2, "wifi 2 tellote1234")
 
 time.sleep(1)
 
-s.sendCommand(drone1, "streamoff")
-s.sendCommand(drone2, "streamoff")
+stream.sendCommandAll(drones, "battery?")
 
 time.sleep(1)
 
-s.sendCommand(drone1, "streamon")
-s.sendCommand(drone2, "streamon")
+stream.sendCommand(drone1, "streamoff")
+stream.sendCommand(drone2, "streamoff")
+
+time.sleep(1)
+
+stream.sendCommand(drone1, "streamon")
+stream.sendCommand(drone2, "streamon")
 
 print(f"trying to open {URL1}")
 stream1 = cv2.VideoCapture(URL1)
+stream1.set(cv2.CAP_PROP_BUFFERSIZE, 20)
 if stream1.isOpened() == False:
     print(f'[!] error opening {URL1}')
 
-s.stream("stream-1", stream1)
+streamThread1 = threading.Thread(target=stream.displayStream, args=("stream-1", stream1), daemon=True)
+streamThread1.start()  
 
 print(f"trying to open {URL2}")
 stream2 = cv2.VideoCapture(URL2)
+stream2.set(cv2.CAP_PROP_BUFFERSIZE, 20)
 if stream2.isOpened() == False:
     print(f'[!] error opening {URL2}')
 
-s.stream("stream-2", stream2)
+streamThread2 = threading.Thread(target=stream.displayStream, args=("stream-2", stream2), daemon=True)
+streamThread2.start()  
 
 def getKeyBoardInput():
     lr, fb, ud, yv = 0, 0, 0, 0
@@ -157,9 +158,9 @@ def getKeyBoardInput():
         backWards()
 
     if km.getkey("q"):
-        s.sendCommandAll(drones, "land")
+        stream.sendCommandAll(drones, "land")
     if km.getkey("e"):
-        s.sendCommandAll(drones, "takeoff")
+        stream.sendCommandAll(drones, "takeoff")
     if km.getkey("0"):
         drone_number = 0
     elif km.getkey("1"):
@@ -205,11 +206,11 @@ def saveValues():
 
 def backWards():
     global inputs, yaw, yaws, drone_number
-    s.sendCommand(drones[drone_number], "rc 0 0 0 0")
+    stream.sendCommand(drones[drone_number], "rc 0 0 0 0")
     for input in inputs:
         neginputs = [-c for c in input]
         print(neginputs)
-        s.sendCommand(drones[drone_number], f"rc {neginputs[0]} {neginputs[1]} {neginputs[2]} {neginputs[3]}")
+        stream.sendCommand(drones[drone_number], f"rc {neginputs[0]} {neginputs[1]} {neginputs[2]} {neginputs[3]}")
         time.sleep(interval)
     yaw[drone_number] = yaws[drone_number][-10]
     alist[drone_number] = alist[drone_number][-10]
@@ -220,27 +221,27 @@ try:
         saveValues()
 
         if (drone_number == 9):
-            s.sendCommandAll(drones, f"rc {vals[0]} {vals[1]} {vals[2]} {vals[3]}")
+            stream.sendCommandAll(drones, f"rc {vals[0]} {vals[1]} {vals[2]} {vals[3]}")
             for d in range(len(drones)):
                 coordinates[d].append((x[d], y[d]))
         else:
             for i in range(len(drones)):
                 if (i != drone_number):
-                    s.sendCommandAll(drones, "rc 0 0 0 0")
+                    stream.sendCommandAll(drones, "rc 0 0 0 0")
                     if (abs(x[drone_number] - x[i]) < 25 and abs(y[drone_number] - y[i]) < 25):
                         x[drone_number] = coordinates[drone_number][-10][0]
                         y[drone_number] = coordinates[drone_number][-10][1]
                         backWards()
                     else:
                         coordinates[drone_number].append((x[drone_number], y[drone_number]))
-                        s.sendCommand(drones[drone_number], f"rc {vals[0]} {vals[1]} {vals[2]} {vals[3]}")
+                        stream.sendCommand(drones[drone_number], f"rc {vals[0]} {vals[1]} {vals[2]} {vals[3]}")
 
         img = np.zeros((1000, 1000, 3), np.uint8)
         drawPoints()
         cv2.imshow("Output", img)
         cv2.waitKey(1)
 except KeyboardInterrupt:
-    s.sendCommandAll(drones, "reboot")
+    stream.sendCommandAll(drones, "reboot")
     stream1.release()
     stream2.release()
     drone1.shutdown(1)
