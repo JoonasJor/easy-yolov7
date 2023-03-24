@@ -5,6 +5,7 @@ import cv2
 import math
 import swarm as s
 import threading
+import queue
 
 # Tello video url
 URL1 = "udp://0.0.0.0:11111"
@@ -31,6 +32,7 @@ drone_number = 0
 colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
 
 drones = []
+object = None
 
 km.init()
 
@@ -76,7 +78,8 @@ stream1.set(cv2.CAP_PROP_BUFFERSIZE, 20)
 if stream1.isOpened() == False:
     print(f'[!] error opening {URL1}')
 
-streamThread1 = threading.Thread(target=s.displayStream, args=("stream-1", stream1, True), daemon=True)
+q = queue.Queue(maxsize = 1)
+streamThread1 = threading.Thread(target=s.displayStream, args=("stream-1", stream1, q, True), daemon=True)
 streamThread1.start()  
 
 print(f"trying to open {URL2}")
@@ -85,7 +88,7 @@ stream2.set(cv2.CAP_PROP_BUFFERSIZE, 20)
 if stream2.isOpened() == False:
     print(f'[!] error opening {URL2}')
 
-streamThread2 = threading.Thread(target=s.displayStream, args=("stream-2", stream2, True), daemon=True)
+streamThread2 = threading.Thread(target=s.displayStream, args=("stream-2", stream2, q, False), daemon=True)
 streamThread2.start()  
 
 def getKeyBoardInput():
@@ -155,10 +158,19 @@ def getKeyBoardInput():
     elif km.getkey("b"):
         backWards()
 
+    elif km.getkey("v"):
+        goToObject()
+
     if km.getkey("q"):
-        s.sendCommandAll(drones, "land")
+        if(drone_number == 9):
+            s.sendCommandAll(drones, "land")
+        else:
+            s.sendCommand(drones[drone_number], "land")
     if km.getkey("e"):
-        s.sendCommandAll(drones, "takeoff")
+        if(drone_number == 9):
+            s.sendCommandAll(drones, "takeoff")
+        else:
+            s.sendCommand(drones[drone_number], "takeoff")
     if km.getkey("0"):
         drone_number = 0
     elif km.getkey("1"):
@@ -185,7 +197,9 @@ def drawPoints():
             cv2.circle(img, coordinates[d][i], 2, (colors[d][0] * 0.5, colors[d][1] * 0.5, colors[d][2] * 0.5) , cv2.FILLED)
         cv2.circle(img, (x[d], y[d]), 2, colors[d], cv2.FILLED)   
         cv2.putText(img, f'({x[d]}, {y[d]})', (x[d] + 10, y[d] + 30), cv2.FONT_HERSHEY_PLAIN, 1, colors[d], 1)
-        #cv2.putText(img, f'({(x[d] - 500) / 50}, {(y[d] - 500) / 50})m', (x[d] + 10, y[d] + 30), cv2.FONT_HERSHEY_PLAIN, 1, colors[d], 1)
+    if(object):
+        cv2.circle(img, object, 6, (100, 100, 100) , cv2.FILLED)
+        cv2.putText(img, f'({object[0]}, {object[1]})', (object[0] + 10, object[1] + 30), cv2.FONT_HERSHEY_PLAIN, 1, (100, 100, 100), 1)
 
 def saveValues():
     global inputs, yaw, yaws, drone_number
@@ -213,9 +227,31 @@ def backWards():
     yaw[drone_number] = yaws[drone_number][-10]
     alist[drone_number] = alist[drone_number][-10]
 
+def calculateObjectCoords(detection):
+    global x, y
+
+    a = list(range(720))
+    height = detection["height"]
+    offset = a[-int(height)]
+    object = (x[0], y[0] - int(offset * 0.1))
+    return object
+
+def goToObject():
+    global x, y, object
+    going = False
+    #for i in range(len(drones)):
+        #if (i != drone_number):
+    if(not going):
+        going = True
+        s.sendCommand(drones[1], f"go {y[1] - object[1]} {x[1] - object[0]} 0 60")
+        #s.sendCommand(drones[1], f"go {y[1] - object[1]} 0 0 60")
+        #s.sendCommand(drones[1], f"go {object[0] - x[1] + 20} 0 0 {fSpeed}")
+        x[1] = object[0] + 20
+        y[1] = object[1]
+        time.sleep(3)
+
 try:
     while True:
-        time.sleep(0.1)
         vals = getKeyBoardInput()
         saveValues()
 
@@ -236,7 +272,13 @@ try:
                         s.sendCommand(drones[drone_number], f"rc {vals[0]} {vals[1]} {vals[2]} {vals[3]}")
 
         img = np.zeros((1000, 1000, 3), np.uint8)
+        if(not q.empty()):
+            detection = q.get_nowait()
+            if(not object and drone_number != 9):
+                object = calculateObjectCoords(detection)
+
         drawPoints()
+
         cv2.imshow("Output", img)
         cv2.waitKey(1)
 except KeyboardInterrupt:
