@@ -3,13 +3,16 @@ import cv2
 from algorithm.object_detector import YOLOv7
 from utils.detections import draw
 import json
+import queue
 
 # Yolo settings
 WEIGHTS = 'coco.weights'
 CLASSES = 'coco.yaml'
 DEVICE  = 'cpu'
 
-def displayStream(stream_name, stream, yolo_detection):
+object_class = "bottle"
+
+def displayStream(stream_name, stream, q, yolo_detection):
     # Init yolo
     yolov7 = YOLOv7()
     yolov7.load(WEIGHTS, classes=CLASSES, device=DEVICE) 
@@ -27,15 +30,19 @@ def displayStream(stream_name, stream, yolo_detection):
                         counter = 0                                    
                         detections = yolov7.detect(frame)
                         if len(detections) != 0:
-                            if(detections[0].get("class") == "laptop"):
-                                print(detections[0].get("height"))
+                            for i, detection in enumerate(detections):
+                                if(detection["class"] == object_class):
+                                    #print(detection["class"])
+                                    q.put(detection)
+                                    
+                                #print(detection["class"])
                             #print(f'\n{stream_name}:\n', json.dumps(detections, indent=4)) 
                             #print(detections)
                     frame = draw(frame, detections)
                 cv2.imshow(stream_name, frame)
                 cv2.waitKey(1)
-        except Exception as e:   
-            print (f"stream thread {stream_name} exited: {e}")        
+        except Exception:   
+            print (f"stream thread {stream_name} exited")        
             break  
 
 def recv(thread_name, drone):
@@ -49,12 +56,14 @@ def recv(thread_name, drone):
             break
 
 def sendCommand(drone, com):
-    print(f"sent command: {com} to {drone.getsockname()}")
+    if("rc 0 0 0 0" not in com):
+        print(f"sent command: {com} to {drone.getsockname()}")
     drone.sendto(com.encode(), ('192.168.10.1', 8889))
 
 def sendCommandAll(drones, com):
     for drone in drones:
-        print(f"sent command: {com} to {drone.getsockname()}")
+        if("rc 0 0 0 0" not in com):
+            print(f"sent command: {com} to {drone.getsockname()}")
         drone.sendto(com.encode(), ('192.168.10.1', 8889))
 
 def bindSocket(interface_ip, port):
