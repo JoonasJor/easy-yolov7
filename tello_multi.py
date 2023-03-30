@@ -32,7 +32,8 @@ drone_number = 0
 colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
 
 drones = []
-object = None
+objects = []
+follow_object = False
 
 km.init()
 
@@ -95,7 +96,7 @@ def getKeyBoardInput():
     lr, fb, ud, yv = 0, 0, 0, 0
     speed = 30
     aspeed = 50
-    global yaw, x, y, a, drone_number
+    global yaw, x, y, a, drone_number, follow_object
     d = 0
     if km.getkey("LEFT"):
         lr = -speed
@@ -158,8 +159,8 @@ def getKeyBoardInput():
     elif km.getkey("b"):
         backWards()
 
-    elif km.getkey("v"):
-        goToObject()
+    elif km.getkey("f"):
+        follow_object = not follow_object
 
     if km.getkey("q"):
         if(drone_number == 9):
@@ -197,9 +198,11 @@ def drawPoints():
             cv2.circle(img, coordinates[d][i], 2, (colors[d][0] * 0.5, colors[d][1] * 0.5, colors[d][2] * 0.5) , cv2.FILLED)
         cv2.circle(img, (x[d], y[d]), 2, colors[d], cv2.FILLED)   
         cv2.putText(img, f'({x[d]}, {y[d]})', (x[d] + 10, y[d] + 30), cv2.FONT_HERSHEY_PLAIN, 1, colors[d], 1)
-    if(object):
-        cv2.circle(img, object, 6, (100, 100, 100) , cv2.FILLED)
-        cv2.putText(img, f'({object[0]}, {object[1]})', (object[0] + 10, object[1] + 30), cv2.FONT_HERSHEY_PLAIN, 1, (100, 100, 100), 1)
+    if(objects):
+        for object in objects:
+            cv2.circle(img, object, 6, (100, 100, 100) , cv2.FILLED)
+        cv2.putText(img, f'({objects[-1][0]}, {objects[-1][1]})', (objects[-1][0] + 10, objects[-1][1] + 30), cv2.FONT_HERSHEY_PLAIN, 1, (100, 100, 100), 1)
+        cv2.circle(img, objects[-1], 6, (150, 100, 100) , cv2.FILLED)
 
 def saveValues():
     global inputs, yaw, yaws, drone_number
@@ -228,30 +231,28 @@ def backWards():
     alist[drone_number] = alist[drone_number][-10]
 
 def calculateObjectCoords(detection):
-    global x, y
+    global x, y, objects
 
     a = list(range(720))
     height = detection["height"]
     offset = a[-int(height)]
     object = (x[0], y[0] - int(offset * 0.1))
-    return object
+    objects.append(object)
 
 def goToObject():
-    global x, y, object
+    global x, y, objects
     going = False
     #for i in range(len(drones)):
         #if (i != drone_number):
     if(not going):
         going = True
-        s.sendCommand(drones[1], f"go {(x[1] - object[0]) * 2} {(y[1] - object[1] + 20) * 2} 0 60")
+        s.sendCommand(drones[1], f"go {(x[1] - objects[-1][0]) * 2} {(y[1] - objects[-1][1] + 20) * 2} 0 60")
         #s.sendCommand(drones[1], f"go {y[1] - object[1]} 0 0 60")
         #s.sendCommand(drones[1], f"go {object[0] - x[1] + 20} 0 0 {fSpeed}")
-        x[1] = object[0]
-        y[1] = object[1] + 30
-        print(going)
+        x[1] = objects[-1][0]
+        y[1] = objects[-1][1] + 30
         time.sleep(1)
         going = False
-        print(going)
 
 try:
     while True:
@@ -273,12 +274,14 @@ try:
                     else:
                         coordinates[drone_number].append((x[drone_number], y[drone_number]))
                         s.sendCommand(drones[drone_number], f"rc {vals[0]} {vals[1]} {vals[2]} {vals[3]}")
+        if(objects and follow_object):
+            if (abs(x[1] - objects[-1][0]) > 35 or abs(y[1] - objects[-1][1]) > 35):
+                goToObject()
 
         img = np.zeros((1000, 1000, 3), np.uint8)
         if(not q.empty()):
             detection = q.get_nowait()
-            if(not object and drone_number != 9):
-                object = calculateObjectCoords(detection)
+            calculateObjectCoords(detection)
 
         drawPoints()
 
