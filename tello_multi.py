@@ -243,12 +243,15 @@ def goToObject():
         #if (i != drone_number):
     if(not going):
         going = True
-        s.sendCommand(drones[1], f"go {y[1] - object[1]} {x[1] - object[0]} 0 60")
+        s.sendCommand(drones[1], f"go {(x[1] - object[0]) * 2} {(y[1] - object[1] + 20) * 2} 0 60")
         #s.sendCommand(drones[1], f"go {y[1] - object[1]} 0 0 60")
         #s.sendCommand(drones[1], f"go {object[0] - x[1] + 20} 0 0 {fSpeed}")
-        x[1] = object[0] + 20
-        y[1] = object[1]
-        time.sleep(3)
+        x[1] = object[0]
+        y[1] = object[1] + 30
+        print(going)
+        time.sleep(1)
+        going = False
+        print(going)
 
 try:
     while True:
