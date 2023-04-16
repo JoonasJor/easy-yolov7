@@ -45,6 +45,7 @@ def displayStream(stream_name, stream, q, yolo_detection):
             print (f"stream thread {stream_name} exited")        
             break  
 
+# receive responses from drones
 def recv(thread_name, drone):
     while True: 
         try:
@@ -55,17 +56,20 @@ def recv(thread_name, drone):
             print (f"{thread_name} exited")  
             break
 
+# send command to one drone
 def sendCommand(drone, com):
     if("rc 0 0 0 0" not in com):
         print(f"sent command: {com} to {drone.getsockname()}")
     drone.sendto(com.encode(), ('192.168.10.1', 8889))
 
+# send command to all drones
 def sendCommandAll(drones, com):
     for drone in drones:
         if("rc 0 0 0 0" not in com):
             print(f"sent command: {com} to {drone.getsockname()}")
         drone.sendto(com.encode(), ('192.168.10.1', 8889))
 
+# bind to network interface
 def bindSocket(interface_ip, port):
     drone = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     drone.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
