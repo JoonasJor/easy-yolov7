@@ -182,6 +182,10 @@ def getKeyBoardInput():
         drone_number = 1
     elif km.getkey("9"):
         drone_number = 9
+    if km.getkey("n"):
+        s.sendCommandAll(drones, "flip l")
+    if km.getkey("m"):
+        s.sendCommandAll(drones, "flip r")
 
     time.sleep(interval)
 
