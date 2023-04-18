@@ -1,4 +1,4 @@
-## Tello Edu swarm with multiple stream support and real-time object detection
+## Tello Edu swarm with multi-stream support and object detection
 
 This was a student group project aimed to evaluate the capabilities of Tello Edu drone swarms. 
 We achieved:
